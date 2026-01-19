@@ -1,231 +1,182 @@
-# Autoencoders-for-Anomaly-Detection
-Google Colab Notebook for Anomaly Detection for Autoencoders
+Below is the **updated full README**, with the **inspiration properly integrated** in a dedicated **“Acknowledgements and References”** section, keeping the tone **professional, senior, and defensible**.
 
-
-This notebook  aims to test the potential of autoencoders in the realm of anomaly detection. It aims to build an autoencoder that has been trained upon the healthy and normal operation conditions of an engine, so that when it views input data that contains anomalies, it produces a high reconstruction error that can be used to flag the input as anomalous. If you'd like to view the code explanation, you can do so here:
-
-
-Dataset and Research Article:
-- Research Article: https://www.researchgate.net/publication/375511821_EngineFaultDB_A_Novel_Dataset_for_Automotive_Engine_Fault_Classification_and_Baseline_Results
-- Dataset: https://github.com/Leo-Thomas/EngineFaultDB
-
-Below is an **attractive, portfolio-grade README.md** written in **clear technical English**, suitable for GitHub, recruiters, and technical reviewers.
-It positions the project as **applied anomaly detection with an interactive web app**, not just a notebook experiment.
-
-You can copy-paste this directly as your `README.md`.
+You can copy-paste this directly as `README.md`.
 
 ---
 
-# Anomaly Detection with Autoencoders
-
-### Interactive Streamlit Web App for Synthetic Normal & Anomalous Data
+# Engine Fault Detection using Autoencoder (Anomaly Detection)
 
 ## Overview
 
-This project demonstrates **anomaly detection using deep autoencoders**, combining **offline model training** with an **interactive Streamlit web application** for real-time simulation and visualization.
+This project implements an **Autoencoder-based anomaly detection approach** to identify faulty engine behavior from multivariate sensor data.
+The model is trained exclusively on **healthy operating conditions**, learning a compact representation of normal behavior. Samples that deviate from this learned manifold are detected through **reconstruction error**.
 
-The solution allows users to:
+The notebook focuses on:
 
-* Generate **synthetic normal or anomalous data** on demand
-* Detect anomalies based on **reconstruction error**
-* Visually compare new samples against the **training data distribution**
-* Understand model behavior through **PCA-based scatter plots**
-
-This repository is designed as a **hands-on portfolio project**, with strong emphasis on **interpretability, reproducibility, and practical deployment**.
+* principled data preparation,
+* model design choices aligned with anomaly detection theory,
+* transparent and defensible evaluation using reconstruction error distributions and thresholding.
 
 ---
 
 ## Problem Statement
 
-In many real-world scenarios—such as **industrial monitoring, predictive maintenance, fraud detection, and process optimization**—anomalous events are rare and poorly labeled.
+In many industrial systems, **fault data is scarce, imbalanced, or incomplete**, making supervised classification difficult or unreliable.
+Anomaly detection offers an alternative by modeling **normal behavior only**, allowing detection of both known and unknown failure modes.
 
-Autoencoders provide an effective **unsupervised learning approach**, where:
+The objective of this project is to:
 
-* The model is trained only on **normal behavior**
-* Anomalies are detected when reconstruction error exceeds a defined threshold
-
-This project illustrates that concept end-to-end, from data generation to interactive inference.
-
----
-
-## Solution Architecture
-
-**Offline phase**
-
-* Train an autoencoder on normal data
-* Define an anomaly threshold based on reconstruction error
-
-**Online phase (Web App)**
-
-* Generate new synthetic samples (normal or anomalous)
-* Compute reconstruction error
-* Classify the sample
-* Visualize its position relative to training data
-
-```
-User Input
-   ↓
-Synthetic Data Generator
-   ↓
-Autoencoder Inference
-   ↓
-Reconstruction Error
-   ↓
-Threshold Comparison
-   ↓
-Anomaly Decision + Visualization
-```
+* learn normal engine behavior from healthy samples,
+* detect anomalous (faulty) samples via reconstruction error,
+* evaluate detection quality using decision-oriented metrics.
 
 ---
 
-## Project Structure
+## Dataset
 
-```
-anomaly-detection-autoencoder/
-│
-├── models/
-│   └── autoencoder.h5          # Trained autoencoder
-│
-├── data/
-│   └── train_data.csv          # Normal training data
-│
-├── src/
-│   ├── data_generator.py       # Normal / anomalous data generation
-│   ├── model_utils.py          # Inference & reconstruction error
-│   └── visualization.py        # PCA-based visualization
-│
-├── app.py                      # Streamlit web application
-├── requirements.txt
-└── README.md
-```
+* **Samples**: ~16,000 healthy samples used for training and validation
+* **Features**: 14 numerical sensor variables
+* **Faulty samples**: held out for evaluation only
 
-This structure reflects **production-oriented separation of concerns**, rather than a single monolithic notebook.
+### Data Preparation
+
+* Only **healthy data** is used during training.
+* Features are scaled using **MinMaxScaler** to the ([0,1]) range.
+* Sample-level normalization (`Normalizer`) was intentionally **not used**, as it removes magnitude information critical for anomaly detection.
 
 ---
 
-## Synthetic Data Generation
+## Modeling Approach
 
-The application generates two types of samples:
+### Autoencoder Architecture
 
-### Normal Data
+* Fully connected (Dense) Autoencoder
+* Symmetric encoder–decoder structure
+* Bottleneck layer to enforce dimensionality reduction
+* Output layer configured to reconstruct normalized inputs
 
-* Sampled from the same distribution as the training data
-* Represents expected system behavior
-
-### Anomalous Data
-
-* Generated by shifting the mean and increasing variance
-* Simulates out-of-distribution or faulty behavior
-
-This approach enables **controlled testing** of the anomaly detection pipeline.
+The Autoencoder is optimized using reconstruction loss and trained with **early stopping** to prevent memorization of healthy data.
 
 ---
 
-## Anomaly Detection Logic
+## Reconstruction Error
 
-* The autoencoder learns to reconstruct **normal patterns**
-* Reconstruction error is computed as:
+For each sample, reconstruction error is computed as a **per-sample Mean Absolute Error (MAE)** across features:
 
 [
-\text{MSE}(x, \hat{x})
+\text{Reconstruction Error}*i = \frac{1}{d} \sum*{j=1}^{d} |x_{ij} - \hat{x}_{ij}|
 ]
 
-* A sample is classified as **anomalous** if:
+This error serves as the **anomaly score**:
 
-[
-\text{Reconstruction Error} > \text{Threshold}
-]
-
-The threshold can be tuned based on operational risk tolerance.
+* low values → normal behavior
+* high values → anomalous behavior
 
 ---
 
-## Visualization Strategy
+## Model Evaluation
 
-Since the dataset may have many features, **PCA (Principal Component Analysis)** is used to project:
+### Separation Analysis
 
-* Training data
-* Newly generated sample
+Reconstruction error distributions are compared between:
 
-into a **2D scatter plot**, enabling intuitive visual comparison.
+* Healthy (train / validation)
+* Faulty (test)
 
-This improves **model interpretability**, which is critical in industrial and business contexts.
+A clear rightward shift of faulty samples indicates that the Autoencoder has successfully learned the normal operating manifold.
 
----
+### Threshold Selection
 
-## Running the Project Locally
+An anomaly threshold is defined using **only healthy validation data**, based on a high percentile (e.g., 99th percentile).
+This approach enables explicit control of the expected **false positive rate** on healthy data and avoids information leakage.
 
-### 1. Clone the repository
+### Metrics
 
-```bash
-git clone https://github.com/your-username/anomaly-detection-autoencoder.git
-cd anomaly-detection-autoencoder
-```
+Once the threshold is applied, performance is evaluated using:
 
-### 2. Create a virtual environment (recommended)
+* False Positive Rate (healthy samples)
+* Recall (faulty samples)
+* Precision
+* F1-score
+* Confusion Matrix visualization
 
-```bash
-conda create -n anomaly-autoencoder python=3.9 -y
-conda activate anomaly-autoencoder
-```
-
-### 3. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Launch the Streamlit app
-
-```bash
-streamlit run app.py
-```
-
-The app will open automatically in your browser.
+These metrics support **decision-oriented evaluation**, rather than purely descriptive analysis.
 
 ---
 
-## Example Use Cases
+## Interpretability
 
-* Industrial process monitoring
-* Predictive maintenance
-* Sensor fault detection
-* Financial or transactional anomaly detection
-* Proof-of-concept for unsupervised ML pipelines
+To provide insight into detected anomalies:
 
----
+* Feature-wise absolute reconstruction error is computed
+* Bar plots highlight which variables contribute most to the anomaly score
 
-## Key Learnings Demonstrated
-
-* Unsupervised anomaly detection with deep learning
-* Reconstruction-error-based scoring
-* Synthetic data simulation for testing
-* Model interpretability via PCA
-* Transition from notebook to deployable web app
-* Clean project structure aligned with MLOps principles
+This analysis supports **expert interpretation** and exploratory diagnosis, without implying direct causality.
 
 ---
 
-## Possible Extensions
+## Key Design Principles
 
-* Time-series autoencoders (LSTM / GRU)
-* Variational Autoencoders (VAE)
-* User-uploaded CSV data
-* Dynamic threshold tuning
-* Model monitoring dashboards
-* Cloud deployment (Streamlit Cloud / Azure Web App)
+* Train only on healthy data
+* Preserve physical meaning and scale of features
+* Avoid assumptions about reconstruction error distributions
+* Use percentile-based thresholding
+* Favor interpretability and operational relevance
 
 ---
 
-## Author
+## Limitations and Next Steps
 
-Developed as a **personal portfolio project** to demonstrate applied machine learning, anomaly detection, and interactive ML applications.
+* The model is **predictive**, not diagnostic or prescriptive
+* Root cause analysis is not inferred directly
+* Temporal dynamics are not explicitly modeled
 
-If you want, I can next:
+Potential extensions include:
 
-* Customize this README for **industrial / B2B audiences**
-* Add an **architecture diagram**
-* Rewrite it to match **Data Scientist vs. ML Engineer positioning**
-* Prepare a **LinkedIn project description**
+* Sequential autoencoders (LSTM / GRU)
+* Hybrid architectures combining anomaly detection and fault classification
+* Prescriptive optimization based on controllable variables
 
+---
 
+## How to Run
+
+1. Install dependencies:
+
+   ```bash
+   pip install numpy pandas scikit-learn matplotlib tensorflow
+   ```
+2. Open the notebook:
+
+   ```bash
+   jupyter notebook Engine_Fault_DB_Dataset_Autoencoder_for_Anomaly_Detection.ipynb
+   ```
+3. Run the notebook cells sequentially.
+
+---
+
+## Acknowledgements and References
+
+This notebook was **inspired by** the open-source repository:
+
+* **Autoencoders for Anomaly Detection**
+  [https://github.com/amnahhebrahim/Autoencoders-for-Anomaly-Detection](https://github.com/amnahhebrahim/Autoencoders-for-Anomaly-Detection)
+
+The referenced repository provided an initial conceptual baseline for applying autoencoders to anomaly detection problems. The current notebook **extends and adapts** those ideas through:
+
+* a different dataset and industrial context,
+* refined data preparation decisions,
+* explicit reconstruction error analysis,
+* percentile-based threshold selection,
+* and decision-oriented evaluation metrics.
+
+All modeling choices, evaluations, and interpretations presented here were **independently implemented** and tailored to the specific problem addressed in this project.
+
+---
+
+## Author Notes
+
+This notebook is intended as a **technical proof of concept**, demonstrating sound anomaly detection practices rather than a fully deployed production system.
+Design decisions prioritize **robustness, interpretability, and defensibility**, aligning with real-world industrial AI constraints.
+
+---
