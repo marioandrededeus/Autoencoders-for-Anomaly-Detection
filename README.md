@@ -1,9 +1,3 @@
-Below is the **updated full README**, with the **inspiration properly integrated** in a dedicated **“Acknowledgements and References”** section, keeping the tone **professional, senior, and defensible**.
-
-You can copy-paste this directly as `README.md`.
-
----
-
 # Engine Fault Detection using Autoencoder (Anomaly Detection)
 
 ## Overview
